@@ -1,0 +1,19 @@
+node_modules/
+.env
+
+# Local SQLite files
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# User uploaded files
+uploads/
+
+# Local tooling/config not needed for app deployment
+.agents/
+.claude/
+.kiro/
+.windsurf/
+skills/
+skills-lock.json
+everything-claude-code/

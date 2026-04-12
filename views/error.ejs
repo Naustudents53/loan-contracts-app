@@ -1,0 +1,12 @@
+<%- include('partials/header') %>
+
+<div class="text-center py-5 animate-in">
+  <div style="font-size: 4rem; color: var(--text-muted); margin-bottom: 1rem;">
+    <i class="bi bi-question-circle"></i>
+  </div>
+  <h1 class="page-title"><%= typeof title !== 'undefined' ? title : 'Error' %></h1>
+  <p style="color: var(--text-muted); margin-top: 1rem;"><%= typeof message !== 'undefined' ? message : 'Ha ocurrido un error.' %></p>
+  <a href="/contracts" class="btn btn-accent mt-3">Volver a Contratos</a>
+</div>
+
+<%- include('partials/footer') %>

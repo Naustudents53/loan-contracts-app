@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firmar Contrato - <%= contract.client_name %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+        <!-- Header -->
+        <div class="text-center mb-4 animate-in">
+          <div class="sign-hero-icon"><i class="bi bi-file-earmark-text"></i></div>
+          <h2 class="page-title">Contrato de Prestamo</h2>
+          <p class="page-subtitle">Revise los detalles y firme al final</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-glass alert-danger mb-4"><i class="bi bi-exclamation-circle me-2"></i><%= error %></div>
+        <% } %>
+
+        <% if (contract.contract_pdf_path) { %>
+          <div class="alert alert-glass mb-4">
+            <i class="bi bi-file-earmark-pdf me-2"></i>
+            Contrato base cargado.
+            <a href="<%= contract.contract_pdf_path %>" target="_blank" rel="noopener">Abrir PDF</a>
+          </div>
+        <% } else { %>
+          <div class="alert alert-glass alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Este contrato no tiene PDF base cargado. No se podra completar la firma hasta subirlo.
+          </div>
+        <% } %>
+
+        <!-- Datos del Cliente -->
+        <div class="glass-card mb-4 animate-in delay-1">
+          <div class="card-header accent"><i class="bi bi-person"></i> Cliente</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-12 col-sm-6 mb-2">
+                <div class="stat-label">Nombre</div>
+                <div class="mt-1"><%= contract.client_name %></div>
+              </div>
+              <div class="col-12 col-sm-6 mb-2">
+                <div class="stat-label">Cedula</div>
+                <div class="mt-1"><%= contract.client_cedula %></div>
+              </div>
+              <% if (contract.client_phone) { %>
+                <div class="col-12 col-sm-6 mt-2">
+                  <div class="stat-label">Telefono</div>
+                  <div class="mt-1"><%= contract.client_phone %></div>
+                </div>
+              <% } %>
+              <% if (contract.client_address) { %>
+                <div class="col-12 col-sm-6 mt-2">
+                  <div class="stat-label">Direccion</div>
+                  <div class="mt-1"><%= contract.client_address %></div>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalles del Prestamo -->
+        <div class="glass-card mb-4 animate-in delay-2">
+          <div class="card-header success-header"><i class="bi bi-cash-stack"></i> Detalles del Prestamo</div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-6 col-md-3 mb-3">
+                <div class="stat-label">Prestamo</div>
+                <div class="stat-value stat-value-compact mt-1">$<%= Number(contract.prestamo).toLocaleString('es-DO', {minimumFractionDigits: 2}) %></div>
+              </div>
+              <div class="col-6 col-md-3 mb-3">
+                <div class="stat-label">Interes</div>
+                <div class="stat-value stat-value-compact mt-1"><%= contract.precio %>%</div>
+              </div>
+              <div class="col-6 col-md-3 mb-3">
+                <div class="stat-label">Cuota</div>
+                <div class="stat-value stat-value-compact mt-1">$<%= Number(contract.cuota).toLocaleString('es-DO', {minimumFractionDigits: 2}) %></div>
+              </div>
+              <div class="col-6 col-md-3 mb-3">
+                <div class="stat-label">Deuda Total</div>
+                <div class="stat-value stat-value-compact stat-danger mt-1">$<%= Number(contract.deuda_total).toLocaleString('es-DO', {minimumFractionDigits: 2}) %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <% if (contract.notes) { %>
+          <div class="glass-card mb-4 animate-in delay-2">
+            <div class="card-header"><i class="bi bi-journal-text"></i> Notas</div>
+            <div class="card-body state-copy"><%= contract.notes %></div>
+          </div>
+        <% } %>
+
+        <!-- Firma -->
+        <div class="glass-card mb-4 animate-in delay-3">
+          <div class="card-header">
+            <i class="bi bi-pen"></i> Firma del Cliente
+          </div>
+          <div class="card-body">
+            <p class="signature-helper" id="signature-instruction">Dibuje su firma en el recuadro:</p>
+            <div class="signature-container mb-3">
+              <canvas id="signature-canvas" aria-label="Area para firmar" aria-describedby="signature-instruction signature-feedback" tabindex="0"></canvas>
+            </div>
+            <button type="button" class="btn btn-glass btn-sm" id="clear-btn">
+              <i class="bi bi-eraser"></i> Limpiar
+            </button>
+            <div class="typed-signature">
+              <label for="typed-signature" class="form-label-dark">Alternativa accesible</label>
+              <div class="input-group">
+                <input type="text" class="form-control form-control-dark" id="typed-signature"
+                  placeholder="Escriba su nombre completo">
+                <button type="button" class="btn btn-accent-outline" id="apply-typed-signature">Usar nombre</button>
+              </div>
+              <small class="legal-copy d-block mt-2">
+                Si no puede dibujar, puede generar una firma tipografica con su nombre.
+              </small>
+            </div>
+            <p id="signature-feedback" class="legal-copy mt-2 mb-0" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <form id="sign-form" action="/sign/<%= contract.signing_token %>" method="POST">
+          <input type="hidden" name="signature_data" id="signature-data">
+          <div class="d-grid animate-in delay-3">
+            <button type="submit" class="btn btn-accent btn-lg py-3" id="submit-btn">
+              <i class="bi bi-check-circle"></i> Firmar Contrato
+            </button>
+          </div>
+        </form>
+
+        <p class="text-center mt-3 legal-copy">
+          Al firmar, acepta los terminos del contrato de prestamo descritos anteriormente.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+  <script src="/js/signature.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

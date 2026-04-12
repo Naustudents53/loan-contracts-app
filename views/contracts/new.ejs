@@ -1,0 +1,119 @@
+<%- include('../partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h2 class="page-title mb-4 animate-in"><i class="bi bi-plus-lg"></i> Nuevo Contrato</h2>
+
+    <form action="/contracts" method="POST" enctype="multipart/form-data">
+      <!-- Datos del Cliente -->
+      <div class="glass-card mb-4 animate-in delay-1">
+        <div class="card-header accent">
+          <i class="bi bi-person"></i> Datos del Cliente
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="client_name" class="form-label-dark">Nombre Completo *</label>
+              <input type="text" class="form-control form-control-dark" id="client_name" name="client_name" required
+                value="<%= typeof formData !== 'undefined' ? formData.client_name || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="client_cedula" class="form-label-dark">Cedula *</label>
+              <input type="text" class="form-control form-control-dark" id="client_cedula" name="client_cedula" required
+                value="<%= typeof formData !== 'undefined' ? formData.client_cedula || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="client_phone" class="form-label-dark">Telefono</label>
+              <input type="text" class="form-control form-control-dark" id="client_phone" name="client_phone"
+                value="<%= typeof formData !== 'undefined' ? formData.client_phone || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="client_address" class="form-label-dark">Direccion</label>
+              <input type="text" class="form-control form-control-dark" id="client_address" name="client_address"
+                value="<%= typeof formData !== 'undefined' ? formData.client_address || '' : '' %>">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datos del Prestamo -->
+      <div class="glass-card mb-4 animate-in delay-2">
+        <div class="card-header success-header">
+          <i class="bi bi-cash-stack"></i> Datos del Prestamo
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="prestamo" class="form-label-dark">Monto del Prestamo ($) *</label>
+              <input type="number" step="0.01" min="0" class="form-control form-control-dark" id="prestamo" name="prestamo" required
+                value="<%= typeof formData !== 'undefined' ? formData.prestamo || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="precio" class="form-label-dark">Precio / Interes (%) *</label>
+              <input type="number" step="0.01" min="0" class="form-control form-control-dark" id="precio" name="precio" required
+                value="<%= typeof formData !== 'undefined' ? formData.precio || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="cuota" class="form-label-dark">Cuota ($) *</label>
+              <input type="number" step="0.01" min="0" class="form-control form-control-dark" id="cuota" name="cuota" required
+                value="<%= typeof formData !== 'undefined' ? formData.cuota || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="deuda_total" class="form-label-dark">Deuda Total ($) *</label>
+              <input type="number" step="0.01" min="0" class="form-control form-control-dark" id="deuda_total" name="deuda_total" required
+                value="<%= typeof formData !== 'undefined' ? formData.deuda_total || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label for="confianza" class="form-label-dark">Nivel de Confianza *</label>
+              <select class="form-select form-select-dark" id="confianza" name="confianza" required>
+                <option value="">Seleccionar...</option>
+                <option value="Alta" <%= typeof formData !== 'undefined' && formData.confianza === 'Alta' ? 'selected' : '' %>>Alta</option>
+                <option value="Media" <%= typeof formData !== 'undefined' && formData.confianza === 'Media' ? 'selected' : '' %>>Media</option>
+                <option value="Baja" <%= typeof formData !== 'undefined' && formData.confianza === 'Baja' ? 'selected' : '' %>>Baja</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label for="loan_contract_pdf" class="form-label-dark">Contrato del Prestamo (PDF) *</label>
+              <input type="file" class="form-control form-control-dark" id="loan_contract_pdf" name="loan_contract_pdf" accept="application/pdf,.pdf" required>
+              <small style="color: var(--text-muted); display: block; margin-top: 0.4rem;">Este PDF se usara para colocar la firma en la zona mapeada.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="glass-card mb-4 animate-in delay-3">
+        <div class="card-header">
+          <i class="bi bi-journal-text"></i> Notas
+        </div>
+        <div class="card-body">
+          <textarea class="form-control form-control-dark" id="notes" name="notes" rows="3" placeholder="Notas adicionales..."><%= typeof formData !== 'undefined' ? formData.notes || '' : '' %></textarea>
+        </div>
+      </div>
+
+      <div class="d-flex gap-3 animate-in delay-3">
+        <button type="submit" class="btn btn-accent btn-lg">
+          <i class="bi bi-check-lg"></i> Crear Contrato
+        </button>
+        <a href="/contracts" class="btn btn-glass btn-lg">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const prestamoEl = document.getElementById('prestamo');
+  const precioEl = document.getElementById('precio');
+  const deudaEl = document.getElementById('deuda_total');
+
+  function calcDeuda() {
+    const p = parseFloat(prestamoEl.value) || 0;
+    const r = parseFloat(precioEl.value) || 0;
+    deudaEl.value = (p + (p * r / 100)).toFixed(2);
+  }
+
+  prestamoEl.addEventListener('input', calcDeuda);
+  precioEl.addEventListener('input', calcDeuda);
+</script>
+
+<%- include('../partials/footer') %>
