@@ -16,10 +16,11 @@ function normalizeRatio(value, fallback) {
 
 const SIGNATURE_MAP = Object.freeze({
   page: process.env.PDF_SIGNATURE_PAGE || 'last',
-  xRatio: normalizeRatio(process.env.PDF_SIGNATURE_X_RATIO, 0.11),
-  yRatio: normalizeRatio(process.env.PDF_SIGNATURE_Y_RATIO, 0.17),
-  widthRatio: normalizeRatio(process.env.PDF_SIGNATURE_WIDTH_RATIO, 0.32),
-  maxHeightRatio: normalizeRatio(process.env.PDF_SIGNATURE_MAX_HEIGHT_RATIO, 0.1),
+  // Defaults tuned for the signature line above "Cliente." in the base template.
+  xRatio: normalizeRatio(process.env.PDF_SIGNATURE_X_RATIO, 0.21),
+  yRatio: normalizeRatio(process.env.PDF_SIGNATURE_Y_RATIO, 0.39),
+  widthRatio: normalizeRatio(process.env.PDF_SIGNATURE_WIDTH_RATIO, 0.24),
+  maxHeightRatio: normalizeRatio(process.env.PDF_SIGNATURE_MAX_HEIGHT_RATIO, 0.07),
   padding: 10,
 });
 

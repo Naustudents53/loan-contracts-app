@@ -96,8 +96,7 @@ function parseUploadError(err) {
     return 'No se pudo procesar el archivo PDF.';
   }
 
-  if (err.message) return err.message;
-  return 'No se pudo cargar el contrato en PDF.';
+  return 'No se pudo cargar el contrato en PDF. Verifique el archivo e intente nuevamente.';
 }
 
 function sanitizeDownloadName(fileName, fallback) {
@@ -254,8 +253,7 @@ router.post('/', async (req, res) => {
     });
   }
 
-  const { client_name, client_cedula, client_phone, client_address,
-    prestamo, cuota, precio, deuda_total, confianza, notes } = req.body;
+  const validation = validateContractInput(req.body);
 
   const uploadedContractPdfPath = req.file ? buildContractPdfWebPath(req.file.filename) : null;
   const uploadedAbsolutePath = uploadedContractPdfPath
@@ -279,37 +277,96 @@ router.post('/', async (req, res) => {
     });
   }
 
-  if (!client_name || !client_cedula || !prestamo || !cuota || !precio || !deuda_total || !confianza) {
+  if (validation.error) {
     cleanupStoredFile(uploadedContractPdfPath, '/uploads/contracts/');
     return res.render('contracts/new', {
       title: 'Nuevo Contrato',
-      error: 'Por favor completa todos los campos obligatorios.',
+      error: validation.error,
       formData: req.body
     });
   }
+
+  const {
+    clientName,
+    clientCedula,
+    clientPhone,
+    clientAddress,
+    prestamo,
+    cuota,
+    precio,
+    deudaTotal,
+    confianza,
+    notes,
+  } = validation.values;
 
   const signing_token = crypto.randomUUID();
   const originalPdfName = req.file.originalname ? req.file.originalname.trim() : 'contrato.pdf';
 
   try {
     const result = stmts.create.run(
-      client_name.trim(), client_cedula.trim(), client_phone?.trim() || null,
-      client_address?.trim() || null, parseFloat(prestamo), parseFloat(cuota),
-      parseFloat(precio), parseFloat(deuda_total), confianza, signing_token,
-      notes?.trim() || null, uploadedContractPdfPath, originalPdfName
+      clientName, clientCedula, clientPhone,
+      clientAddress, prestamo, cuota,
+      precio, deudaTotal, confianza, signing_token,
+      notes, uploadedContractPdfPath, originalPdfName
     );
     res.redirect(`/contracts/${result.lastInsertRowid}`);
   } catch (err) {
     cleanupStoredFile(uploadedContractPdfPath, '/uploads/contracts/');
     res.render('contracts/new', {
       title: 'Nuevo Contrato',
-      error: 'Error al crear el contrato: ' + err.message,
+      error: 'No se pudo crear el contrato. Intente de nuevo.',
       formData: req.body
     });
   }
 });
 
 // SHOW
+router.get('/:id/pdf/base', (req, res) => {
+  const contract = stmts.getById.get(req.params.id);
+  if (!contract || !contract.contract_pdf_path) {
+    return res.status(404).render('error', { title: 'No encontrado', message: 'No hay PDF base disponible para este contrato.' });
+  }
+
+  if (!req.query.token || req.query.token !== contract.signing_token) {
+    return res.status(403).render('error', { title: 'Acceso denegado', message: 'No tiene permisos para abrir este PDF.' });
+  }
+
+  const absolutePath = resolveStoredFilePath(contract.contract_pdf_path, '/uploads/contracts/');
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    return res.status(404).render('error', { title: 'No encontrado', message: 'El PDF base no existe en el servidor.' });
+  }
+
+  const downloadName = sanitizeDownloadName(contract.contract_pdf_original_name, `contrato-${contract.id}.pdf`);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Cache-Control', 'no-store, private, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Content-Disposition', `inline; filename="${downloadName}"`);
+  return res.sendFile(absolutePath);
+});
+
+router.get('/:id/pdf/signed', (req, res) => {
+  const contract = stmts.getById.get(req.params.id);
+  if (!contract || !contract.signed_pdf_path) {
+    return res.status(404).render('error', { title: 'No encontrado', message: 'No hay PDF firmado disponible para este contrato.' });
+  }
+
+  if (!req.query.token || req.query.token !== contract.signing_token) {
+    return res.status(403).render('error', { title: 'Acceso denegado', message: 'No tiene permisos para abrir este PDF.' });
+  }
+
+  const absolutePath = resolveStoredFilePath(contract.signed_pdf_path, '/uploads/signed/');
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    return res.status(404).render('error', { title: 'No encontrado', message: 'El PDF firmado no existe en el servidor.' });
+  }
+
+  const downloadName = sanitizeDownloadName(`contrato-${contract.id}-firmado.pdf`, `contrato-${contract.id}-firmado.pdf`);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Cache-Control', 'no-store, private, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Content-Disposition', `inline; filename="${downloadName}"`);
+  return res.sendFile(absolutePath);
+});
+
 router.get('/:id', (req, res) => {
   const raw = stmts.getById.get(req.params.id);
   if (!raw) {
@@ -366,8 +423,7 @@ router.put('/:id', async (req, res) => {
     });
   }
 
-  const { client_name, client_cedula, client_phone, client_address,
-    prestamo, cuota, precio, deuda_total, confianza, notes } = req.body;
+  const validation = validateContractInput(req.body);
 
   const replacementPdfPath = req.file ? buildContractPdfWebPath(req.file.filename) : null;
   const replacementAbsolutePath = replacementPdfPath
@@ -383,16 +439,41 @@ router.put('/:id', async (req, res) => {
     });
   }
 
+  if (validation.error) {
+    if (replacementPdfPath) {
+      cleanupStoredFile(replacementPdfPath, '/uploads/contracts/');
+    }
+
+    return res.render('contracts/edit', {
+      title: `Editar Contrato #${contract.id}`,
+      contract: { ...contract, ...req.body },
+      error: validation.error,
+    });
+  }
+
+  const {
+    clientName,
+    clientCedula,
+    clientPhone,
+    clientAddress,
+    prestamo,
+    cuota,
+    precio,
+    deudaTotal,
+    confianza,
+    notes,
+  } = validation.values;
+
   const replacementOriginalName = replacementPdfPath
     ? (req.file.originalname ? req.file.originalname.trim() : 'contrato.pdf')
     : null;
 
   try {
-    stmts.update.run(
-      client_name.trim(), client_cedula.trim(), client_phone?.trim() || null,
-      client_address?.trim() || null, parseFloat(prestamo), parseFloat(cuota),
-      parseFloat(precio), parseFloat(deuda_total), confianza,
-      notes?.trim() || null,
+    const updateResult = stmts.update.run(
+      clientName, clientCedula, clientPhone,
+      clientAddress, prestamo, cuota,
+      precio, deudaTotal, confianza,
+      notes,
       replacementPdfPath,
       replacementOriginalName,
       replacementPdfPath,
@@ -400,6 +481,23 @@ router.put('/:id', async (req, res) => {
       replacementPdfPath,
       req.params.id
     );
+
+    if (!updateResult.changes) {
+      if (replacementPdfPath) {
+        cleanupStoredFile(replacementPdfPath, '/uploads/contracts/');
+      }
+
+      const latest = stmts.getById.get(req.params.id);
+      if (latest && latest.status === 'signed') {
+        return res.redirect(`/contracts/${req.params.id}`);
+      }
+
+      return res.render('contracts/edit', {
+        title: `Editar Contrato #${contract.id}`,
+        contract: { ...contract, ...req.body },
+        error: 'No se pudo actualizar el contrato. Intente de nuevo.',
+      });
+    }
 
     if (replacementPdfPath) {
       cleanupStoredFile(contract.contract_pdf_path, '/uploads/contracts/');
@@ -415,7 +513,7 @@ router.put('/:id', async (req, res) => {
     res.render('contracts/edit', {
       title: `Editar Contrato #${contract.id}`,
       contract: { ...contract, ...req.body },
-      error: 'Error al actualizar: ' + err.message
+      error: 'No se pudo actualizar el contrato. Intente de nuevo.'
     });
   }
 });

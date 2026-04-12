@@ -50,7 +50,7 @@
       <div class="card-header"><i class="bi bi-filetype-pdf"></i> Documentos del Prestamo</div>
       <div class="card-body d-flex flex-wrap gap-2 align-items-center">
         <% if (contract.contract_pdf_path) { %>
-          <a href="<%= contract.contract_pdf_path %>" target="_blank" rel="noopener" class="btn btn-glass btn-sm">
+          <a href="/contracts/<%= contract.id %>/pdf/base?token=<%= contract.signing_token %>" target="_blank" rel="noopener" class="btn btn-glass btn-sm">
             <i class="bi bi-file-earmark-pdf"></i> Ver Contrato Base
           </a>
         <% } else { %>
@@ -58,7 +58,7 @@
         <% } %>
 
         <% if (contract.signed_pdf_path) { %>
-          <a href="<%= contract.signed_pdf_path %>" target="_blank" rel="noopener" class="btn btn-success-glass btn-sm">
+          <a href="/contracts/<%= contract.id %>/pdf/signed?token=<%= contract.signing_token %>" target="_blank" rel="noopener" class="btn btn-success-glass btn-sm">
             <i class="bi bi-check2-square"></i> Ver Contrato Firmado
           </a>
         <% } %>

@@ -7,6 +7,8 @@ const methodOverride = require('method-override');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 const uploadsRoot = path.join(__dirname, 'uploads');
 const uploadsContracts = path.join(uploadsRoot, 'contracts');
 const uploadsSigned = path.join(uploadsRoot, 'signed');
@@ -23,11 +25,13 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(uploadsRoot));
 
 // Make BASE_URL available to all views
 app.use((req, res, next) => {
-  res.locals.baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = (forwardedProto ? String(forwardedProto).split(',')[0] : req.protocol) || 'http';
+  const host = req.get('host');
+  res.locals.baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
   next();
 });
 

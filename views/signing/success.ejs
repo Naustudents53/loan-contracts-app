@@ -45,7 +45,7 @@
           </div>
           <% if (contract.signed_pdf_path) { %>
             <div class="mt-4">
-              <a href="<%= contract.signed_pdf_path %>" target="_blank" rel="noopener" class="btn btn-success-glass">
+              <a href="/sign/<%= contract.signing_token %>/pdf" target="_blank" rel="noopener" class="btn btn-success-glass">
                 <i class="bi bi-file-earmark-arrow-down"></i> Descargar Contrato Firmado
               </a>
             </div>

@@ -30,7 +30,7 @@
           <div class="alert alert-glass mb-4">
             <i class="bi bi-file-earmark-pdf me-2"></i>
             Contrato base cargado.
-            <a href="<%= contract.contract_pdf_path %>" target="_blank" rel="noopener">Abrir PDF</a>
+            <a href="/sign/<%= contract.signing_token %>/pdf/base" target="_blank" rel="noopener">Abrir PDF</a>
           </div>
         <% } else { %>
           <div class="alert alert-glass alert-danger mb-4">
