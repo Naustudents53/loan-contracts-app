@@ -99,8 +99,10 @@ router.get('/:token/pdf', async (req, res) => {
 
   let signedPdfPath = contract.signed_pdf_path;
   const canRemap = contract.status === 'signed' && contract.signature_data && contract.contract_pdf_path;
+  const remapParam = String(req.query.remap || '').toLowerCase();
+  const forceRemap = remapParam === '1' || remapParam === 'true' || remapParam === 'yes';
 
-  if (canRemap) {
+  if (canRemap && (forceRemap || !signedPdfPath)) {
     try {
       signedPdfPath = await remapSignedPdf(contract);
     } catch (err) {
